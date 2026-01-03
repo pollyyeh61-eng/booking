@@ -219,7 +219,22 @@
             };
             reader.readAsDataURL(e.target.files[0]);
         };
-
+// 修改後的上傳邏輯 (範例)
+async function uploadPhoto(file) {
+    const fileName = `photos/${Date.now()}_${file.name}`; // 加入時間戳記避免重複
+    const storageRef = ref(storage, fileName);
+    
+    // 上傳後獲取網址
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
+    
+    // 將新網址「推入」Firebase 數據庫的陣列中，而不是覆蓋
+    const dbRef = ref(db, 'communication_photos/');
+    push(dbRef, {
+        url: url,
+        createdAt: Date.now()
+    });
+}
         // --- 預約諮詢邏輯 ---
         window.toggleService = (el) => el.classList.toggle('selected');
         window.addBooking = function() {
@@ -274,4 +289,5 @@
     </script>
 </body>
 </html>
+
 
