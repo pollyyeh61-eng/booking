@@ -41,7 +41,6 @@
         .prev-btn { left: 10px; }
         .next-btn { right: 10px; }
 
-        /* 介面卡片 */
         .glass-card { background: linear-gradient(145deg, #111, #000); border: 1px solid var(--gold-dim); border-radius: 24px; padding: 22px; margin-bottom: 20px; width: 100%; box-sizing: border-box; }
         .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .service-item {
@@ -60,9 +59,8 @@
         .calendar-wrap { margin-bottom: 20px; text-align: center; }
         .calendar-table { width: 100%; border-collapse: collapse; color: #ccc; }
         .calendar-table th { color: var(--gold-bright); font-size: 12px; padding: 10px 0; }
-        .calendar-table td { width: 14%; height: 40px; font-size: 14px; cursor: pointer; border-radius: 8px; position: relative; }
-        .calendar-table td.has-event { background: var(--gold-bright); color: #000; font-weight: bold; box-shadow: 0 0 8px var(--gold-glow); }
-        .calendar-table td.today { border: 1px solid var(--gold-bright); }
+        .calendar-table td { width: 14%; height: 40px; font-size: 14px; cursor: pointer; border-radius: 8px; }
+        .calendar-table td.has-event { background: var(--gold-bright); color: #000; font-weight: bold; }
         .calendar-table td.selected-date { outline: 2px solid #fff; }
 
         /* 分頁切換器 */
@@ -130,18 +128,15 @@
         <div class="glass-card calendar-wrap">
             <h3 id="cal-month-title" style="margin-top:0; color:var(--gold-bright);">2026年 1月</h3>
             <table class="calendar-table" id="calendar-body">
-                <thead>
-                    <tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr>
-                </thead>
+                <thead><tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr></thead>
                 <tbody></tbody>
             </table>
-            <p style="font-size:11px; color:#666; margin-top:10px;">* 反白日期代表當天有預約</p>
         </div>
 
         <div class="glass-card">
-        <div class="photo-manage-list" id="photo-manage-list"></div>
+            <h3>照片庫管理</h3>
+            <div class="photo-manage-list" id="photo-manage-list"></div>
         </div>
-        
         <div id="designer-content"></div>
     </div>
 
@@ -169,6 +164,8 @@
         const bookingRef = ref(db, 'vogue_bookings');
 
         let photoList = JSON.parse(localStorage.getItem('vogue_local_photos') || '[]');
+        // 新增：讀取本機儲存的預約 ID 清單
+        let myBookingIDs = JSON.parse(localStorage.getItem('vogue_my_bookings') || '[]');
         let currentIdx = 0;
         let allBookings = {};
         let selectedDateFilter = null;
@@ -187,27 +184,22 @@
             const year = now.getFullYear();
             const month = now.getMonth();
             document.getElementById('cal-month-title').innerText = `${year}年 ${month + 1}月`;
-            
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const tbody = document.querySelector('#calendar-body tbody');
             tbody.innerHTML = '';
-
             let date = 1;
             for (let i = 0; i < 6; i++) {
                 let row = document.createElement('tr');
                 for (let j = 0; j < 7; j++) {
                     let cell = document.createElement('td');
-                    if (i === 0 && j < firstDay) {
-                        cell.innerText = '';
-                    } else if (date > daysInMonth) {
-                        break;
-                    } else {
+                    if (i === 0 && j < firstDay) { cell.innerText = ''; } 
+                    else if (date > daysInMonth) { break; } 
+                    else {
                         const fullDate = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
                         cell.innerText = date;
                         cell.dataset.date = fullDate;
                         cell.onclick = () => filterByDate(fullDate);
-                        if(date === now.getDate()) cell.classList.add('today');
                         date++;
                     }
                     row.appendChild(cell);
@@ -217,32 +209,21 @@
             }
         }
 
-        function updateCalendarHighlights() {
-            const cells = document.querySelectorAll('.calendar-table td[data-date]');
-            const datesWithBookings = new Set(Object.values(allBookings).map(b => b.fullTime.split(' ')[0]));
-            
-            cells.forEach(cell => {
-                if(datesWithBookings.has(cell.dataset.date)) {
-                    cell.classList.add('has-event');
-                } else {
-                    cell.classList.remove('has-event');
-                }
-            });
-        }
-
         window.filterByDate = (dateStr) => {
             selectedDateFilter = (selectedDateFilter === dateStr) ? null : dateStr;
             document.querySelectorAll('.calendar-table td').forEach(td => td.classList.remove('selected-date'));
-            if(selectedDateFilter) {
-                document.querySelector(`.calendar-table td[data-date="${dateStr}"]`).classList.add('selected-date');
-            }
+            if(selectedDateFilter) document.querySelector(`.calendar-table td[data-date="${dateStr}"]`).classList.add('selected-date');
             renderLists();
         };
 
-        // 監聽數據
+        // 監聽 Firebase 數據
         onValue(bookingRef, (snap) => {
             allBookings = snap.val() || {};
-            updateCalendarHighlights();
+            // 更新月曆標記
+            const datesWithBookings = new Set(Object.values(allBookings).map(b => b.fullTime.split(' ')[0]));
+            document.querySelectorAll('.calendar-table td[data-date]').forEach(cell => {
+                cell.classList.toggle('has-event', datesWithBookings.has(cell.dataset.date));
+            });
             renderLists();
         });
 
@@ -250,30 +231,63 @@
             const clientDiv = document.getElementById('my-list');
             const designDiv = document.getElementById('designer-content');
             clientDiv.innerHTML = ''; 
-            designDiv.innerHTML = `<h3>${selectedDateFilter ? selectedDateFilter + ' 預約名單' : '所有預約'}</h3>`;
+            designDiv.innerHTML = `<h3>${selectedDateFilter ? selectedDateFilter + ' 預約名單' : '後台管理'}</h3>`;
 
             Object.keys(allBookings).reverse().forEach(id => {
                 const item = allBookings[id];
-                const itemDate = item.fullTime.split(' ')[0];
                 const isAccepted = item.status === '已接單';
 
-                // 客戶端顯示（不篩選）
-                clientDiv.innerHTML += `<div class="history-item"><b>${item.name}</b><br><small>${item.fullTime} | ${item.status}</small></div>`;
+                // --- 關鍵修改：客戶端只顯示自己手機存過的 ID ---
+                if (myBookingIDs.includes(id)) {
+                    clientDiv.innerHTML += `
+                        <div class="history-item">
+                            <b>${item.name}</b><br>
+                            <small>${item.fullTime} | 狀態：<span style="color:${isAccepted ? '#00ff00' : '#fff'}">${item.status}</span></small>
+                        </div>`;
+                }
 
-                // 後台顯示（根據月曆點選篩選）
+                // --- 設計師端：顯示所有回傳資料 ---
+                const itemDate = item.fullTime.split(' ')[0];
                 if(!selectedDateFilter || selectedDateFilter === itemDate) {
                     designDiv.innerHTML += `
                         <div class="history-item">
-                            <strong>${item.name}</strong> - ${item.service}<br>
+                            <strong>${item.name}</strong> (${item.phone})<br>
+                            <span>${item.service}</span><br>
                             <small>${item.fullTime}</small><br>
-                            <button class="btn" style="width:auto; padding:5px 10px; font-size:11px;" onclick="updateStatus('${id}')">${isAccepted ? '✓ 已接單' : '接單'}</button>
-                            <button class="btn" style="width:auto; padding:5px 10px; font-size:11px; color:red; border-color:red;" onclick="delBooking('${id}')">刪除</button>
+                            <button class="btn" style="width:auto; padding:5px 12px; font-size:12px; margin-top:5px;" onclick="updateStatus('${id}')">${isAccepted ? '✓ 已接單' : '接單'}</button>
+                            <button class="btn" style="width:auto; padding:5px 12px; font-size:12px; border-color:red; color:red;" onclick="delBooking('${id}')">刪除</button>
                         </div>`;
                 }
             });
         }
 
-        // 其它原有功能邏輯保留...
+        window.addBooking = () => {
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const date = document.getElementById('appDate').value;
+            const time = document.getElementById('appTime').value;
+            const svcs = Array.from(document.querySelectorAll('.service-item.selected')).map(el => el.innerText);
+            if(!name || !date || !time || !svcs.length) return alert("請填寫完整資訊");
+
+            const newPostRef = push(bookingRef);
+            const newID = newPostRef.key; // 獲取 Firebase 產生的唯一 ID
+
+            update(newPostRef, {
+                name, phone, service: svcs.join(', '),
+                fullTime: `${date} ${time}`, status: '待處理'
+            }).then(() => { 
+                // 將這個 ID 存入本機 LocalStorage
+                myBookingIDs.push(newID);
+                localStorage.setItem('vogue_my_bookings', JSON.stringify(myBookingIDs));
+                
+                alert("預約成功！"); 
+                document.getElementById('custName').value = '';
+                document.getElementById('custPhone').value = '';
+                document.querySelectorAll('.service-item').forEach(e => e.classList.remove('selected'));
+            });
+        };
+
+        // 其它功能 (照片輪播、權限等)
         window.handleFileUpload = (e) => {
             const file = e.target.files[0];
             if(!file) return;
@@ -285,7 +299,6 @@
             };
             reader.readAsDataURL(file);
         };
-
         window.renderGallery = () => {
             const main = document.getElementById('main-photo');
             const cnt = document.getElementById('photo-counter');
@@ -297,10 +310,8 @@
                 cnt.innerText = "0 / 0";
             }
         };
-
         window.nextImg = () => { if(photoList.length){ currentIdx = (currentIdx + 1) % photoList.length; renderGallery(); } };
         window.prevImg = () => { if(photoList.length){ currentIdx = (currentIdx - 1 + photoList.length) % photoList.length; renderGallery(); } };
-
         window.renderPhotoManager = () => {
             const list = document.getElementById('photo-manage-list');
             list.innerHTML = '';
@@ -308,32 +319,15 @@
                 list.innerHTML += `<div class="photo-manage-item"><img src="${src}"><button class="del-photo-btn" onclick="deletePhoto(${i})">×</button></div>`;
             });
         };
-
-        window.deletePhoto = (i) => { 
-            photoList.splice(i, 1); 
-            localStorage.setItem('vogue_local_photos', JSON.stringify(photoList)); 
-            renderGallery(); renderPhotoManager(); 
-        };
-
+        window.deletePhoto = (i) => { photoList.splice(i, 1); localStorage.setItem('vogue_local_photos', JSON.stringify(photoList)); renderGallery(); renderPhotoManager(); };
         window.toggleService = (el) => el.classList.toggle('selected');
-        window.addBooking = () => {
-            const name = document.getElementById('custName').value;
-            const phone = document.getElementById('custPhone').value;
-            const date = document.getElementById('appDate').value;
-            const time = document.getElementById('appTime').value;
-            const svcs = Array.from(document.querySelectorAll('.service-item.selected')).map(el => el.innerText);
-            if(!name || !date || !time || !svcs.length) return alert("請填寫完整資訊");
-            push(bookingRef, { name, phone, service: svcs.join(', '), fullTime: `${date} ${time}`, status: '待處理' });
-        };
-
         window.updateStatus = (id) => update(ref(db, `vogue_bookings/${id}`), { status: '已接單' });
         window.delBooking = (id) => { if(confirm("確定刪除？")) remove(ref(db, `vogue_bookings/${id}`)); };
 
         let isAuth = false;
         window.switchTab = (t) => {
             if(t === 'designer' && !isAuth) {
-                const pass = prompt("請輸入管理碼");
-                if(pass !== '0000') return;
+                if(prompt("請輸入管理碼") !== '0000') return;
                 isAuth = true;
             }
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
