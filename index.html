@@ -55,12 +55,10 @@
         input { width: 100%; padding: 15px; margin-bottom: 12px; background: #080808; border: 1.5px solid #222; border-radius: 12px; color: #fff; box-sizing: border-box; font-size: 15px; }
         .btn { width: 100%; padding: 16px; margin-top: 5px; border-radius: 15px; border: 1.8px solid var(--gold-bright); background: transparent; color: var(--gold-bright); font-size: 16px; font-weight: bold; cursor: pointer; letter-spacing: 3px; }
 
-        /* 月曆樣式 - 確保有預約的日期顯示特別色 */
-        .calendar-wrap { margin-bottom: 20px; text-align: center; }
         .calendar-table { width: 100%; border-collapse: collapse; color: #ccc; }
         .calendar-table th { color: var(--gold-bright); font-size: 12px; padding: 10px 0; }
         .calendar-table td { width: 14%; height: 40px; font-size: 14px; cursor: pointer; border-radius: 8px; position: relative; }
-        .calendar-table td.has-event { background: var(--gold-bright) !important; color: #000 !important; font-weight: bold; box-shadow: 0 0 8px var(--gold-glow); }
+        .calendar-table td.has-event { background: var(--gold-bright) !important; color: #000 !important; font-weight: bold; }
         .calendar-table td.selected-date { outline: 2px solid #fff; }
 
         .tab-switcher { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; background: #111; border-radius: 50px; padding: 5px; width: 240px; border: 1px solid #333; z-index: 100; }
@@ -68,7 +66,13 @@
         .tab-btn.active { background: var(--gold-bright); color: #000; font-weight: bold; }
 
         .history-item { background: rgba(255,255,255,0.04); padding: 16px; border-radius: 18px; margin-bottom: 12px; border-left: 4px solid var(--gold-bright); }
-        .ref-photo-thumb { width: 60px; height: 80px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid var(--gold-bright); cursor: pointer; }
+        .ref-photo-thumb { width: 60px; height: 80px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid var(--gold-bright); }
+
+        /* 新增：後台相片牆樣式 */
+        .photo-wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .photo-wall-item { text-align: center; }
+        .photo-wall-item img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid var(--gold-dim); }
+        .photo-wall-item span { display: block; font-size: 11px; color: var(--gold-bright); margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -76,14 +80,14 @@
     <div id="client" class="panel active">
         <h1 style="color:var(--gold-bright); text-align:center; letter-spacing:10px; margin: 20px 0 5px;">VOGUE</h1>
         <div class="carousel-section">
-            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 髮型溝通範本</h4>
+            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 髮型溝通範本 (點選欲回傳照片)</h4>
             <div class="main-display-area">
                 <div class="nav-arrow prev-btn" onclick="prevImg()">&#10094;</div>
                 <img id="main-photo" src="https://via.placeholder.com/230x290/111/d4af37?text=VOGUE" alt="髮型展示">
                 <div class="nav-arrow next-btn" onclick="nextImg()">&#10095;</div>
             </div>
             <p id="photo-counter" style="color:#666; font-size:12px; margin-top:10px;">0 / 0</p>
-            <button class="btn" style="width:80%; margin-top:10px; font-size:14px;" onclick="document.getElementById('photo-input').click()">📷 上傳我要溝通的照片</button>
+            <button class="btn" style="width:80%; margin-top:10px; font-size:14px;" onclick="document.getElementById('photo-input').click()">📷 上傳我的參考照</button>
             <input type="file" id="photo-input" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
         </div>
         
@@ -103,22 +107,26 @@
                 <div class="service-item" onclick="toggleService(this)">髮質護理</div>
             </div>
             <div style="display: flex; gap: 10px;"><input type="date" id="appDate"><input type="time" id="appTime"></div>
-            <button class="btn" onclick="addBooking()">送出預約</button>
+            <button class="btn" onclick="addBooking()">送出預約並回傳照片</button>
         </div>
         <div id="history-section"><div id="my-list"></div></div>
     </div>
 
     <div id="designer" class="panel">
         <h1 style="text-align:center; color:var(--gold-bright);">ATELIER</h1>
-        <div class="glass-card calendar-wrap">
-            <h3 id="cal-month-title" style="color:var(--gold-bright);">2026年 1月</h3>
+        <div class="glass-card">
+            <h3 id="cal-month-title" style="color:var(--gold-bright); text-align:center;">2026年 1月</h3>
             <table class="calendar-table" id="calendar-body">
                 <thead><tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr></thead>
                 <tbody></tbody>
             </table>
-            <p style="font-size:11px; color:#666; margin-top:10px;">* 反白日期代表當天有預約</p>
         </div>
         <div id="designer-content"></div>
+        
+        <div class="glass-card" style="margin-top:20px;">
+            <h3 style="color:var(--gold-bright); margin-top:0;">📸 客戶參考照彙整</h3>
+            <div class="photo-wall" id="photo-wall"></div>
+        </div>
     </div>
 
     <div class="tab-switcher">
@@ -146,24 +154,18 @@
 
         let photoList = JSON.parse(localStorage.getItem('vogue_local_photos') || '[]');
         let myBookingIDs = JSON.parse(localStorage.getItem('vogue_my_bookings') || '[]');
-        let currentIdx = 0;
+        let currentIdx = photoList.length > 0 ? 0 : 0;
         let allBookings = {};
         let selectedDateFilter = null;
 
         window.onload = () => { if(document.getElementById('appDate')) document.getElementById('appDate').valueAsDate = new Date(); renderGallery(); initCalendar(); };
 
-        // 修復：月曆標記邏輯
         function updateCalendarHighlights() {
             const cells = document.querySelectorAll('.calendar-table td[data-date]');
-            // 從所有預約中提取出有預約的日期 (格式 YYYY-MM-DD)
             const datesWithBookings = new Set(Object.values(allBookings).map(b => b.fullTime.split(' ')[0]));
-            
             cells.forEach(cell => {
-                if(datesWithBookings.has(cell.dataset.date)) {
-                    cell.classList.add('has-event');
-                } else {
-                    cell.classList.remove('has-event');
-                }
+                if(datesWithBookings.has(cell.dataset.date)) cell.classList.add('has-event');
+                else cell.classList.remove('has-event');
             });
         }
 
@@ -182,8 +184,7 @@
                     else if (date > daysInMonth) { break; }
                     else {
                         const fullDate = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-                        cell.innerText = date;
-                        cell.dataset.date = fullDate;
+                        cell.innerText = date; cell.dataset.date = fullDate;
                         cell.onclick = () => filterByDate(fullDate);
                         date++;
                     }
@@ -203,15 +204,16 @@
 
         onValue(bookingRef, (snap) => {
             allBookings = snap.val() || {};
-            updateCalendarHighlights(); // 資料更新時同步更新月曆顏色
+            updateCalendarHighlights();
             renderLists();
+            renderPhotoWall(); // 同步渲染照片牆
         });
 
         function renderLists() {
             const clientDiv = document.getElementById('my-list');
             const designDiv = document.getElementById('designer-content');
             clientDiv.innerHTML = ''; 
-            designDiv.innerHTML = `<h3>${selectedDateFilter ? selectedDateFilter + ' 名單' : '後台管理'}</h3>`;
+            designDiv.innerHTML = `<h3>${selectedDateFilter ? selectedDateFilter + ' 名單' : '近期預約'}</h3>`;
 
             Object.keys(allBookings).reverse().forEach(id => {
                 const item = allBookings[id];
@@ -239,13 +241,28 @@
             });
         }
 
+        // 新增：渲染設計師專屬照片牆
+        function renderPhotoWall() {
+            const wall = document.getElementById('photo-wall');
+            wall.innerHTML = '';
+            Object.values(allBookings).reverse().forEach(item => {
+                if(item.refPhoto) {
+                    wall.innerHTML += `
+                        <div class="photo-wall-item">
+                            <img src="${item.refPhoto}" onclick="window.open(this.src)">
+                            <span>${item.name}</span>
+                        </div>`;
+                }
+            });
+        }
+
         window.addBooking = () => {
             const name = document.getElementById('custName').value;
             const phone = document.getElementById('custPhone').value;
             const date = document.getElementById('appDate').value;
             const time = document.getElementById('appTime').value;
             const svcs = Array.from(document.querySelectorAll('.service-item.selected')).map(el => el.innerText);
-            const currentPhoto = photoList.length > 0 ? photoList[currentIdx] : null;
+            const currentPhoto = (photoList.length > 0) ? photoList[currentIdx] : null;
 
             if(!name || !date || !time || !svcs.length) return alert("請填寫完整資訊");
 
@@ -257,7 +274,7 @@
             }).then(() => { 
                 myBookingIDs.push(newPostRef.key);
                 localStorage.setItem('vogue_my_bookings', JSON.stringify(myBookingIDs));
-                alert("預約成功！"); 
+                alert("預約成功！設計師已收到照片。"); 
                 document.getElementById('custName').value = '';
                 document.querySelectorAll('.service-item').forEach(e => e.classList.remove('selected'));
             });
@@ -267,6 +284,7 @@
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = (f) => {
+                // 修復：確保存入本地 LocalStorage
                 photoList.push(f.target.result);
                 localStorage.setItem('vogue_local_photos', JSON.stringify(photoList));
                 currentIdx = photoList.length - 1;
@@ -274,6 +292,7 @@
             };
             reader.readAsDataURL(file);
         };
+
         window.renderGallery = () => {
             const main = document.getElementById('main-photo');
             const cnt = document.getElementById('photo-counter');
@@ -285,6 +304,7 @@
                 cnt.innerText = "0 / 0";
             }
         };
+
         window.nextImg = () => { if(photoList.length){ currentIdx = (currentIdx + 1) % photoList.length; renderGallery(); } };
         window.prevImg = () => { if(photoList.length){ currentIdx = (currentIdx - 1 + photoList.length) % photoList.length; renderGallery(); } };
         window.toggleService = (el) => el.classList.toggle('selected');
@@ -302,5 +322,3 @@
     </script>
 </body>
 </html>
-
-
