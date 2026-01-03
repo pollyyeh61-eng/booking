@@ -238,7 +238,7 @@
             });
         };
 
-        // --- 監聽預約清單 (含姓名顯示) ---
+        // --- 監聽預約清單 (加入接單狀態邏輯) ---
         onValue(bookingRef, (snap) => {
             const data = snap.val();
             const clientDiv = document.getElementById('my-list');
@@ -248,7 +248,8 @@
 
             Object.keys(data).reverse().forEach(id => {
                 const item = data[id];
-                // 修正：在預約進度中加入顧客姓名
+                
+                // 客戶端顯示
                 clientDiv.innerHTML += `
                     <div class="history-item">
                         <div style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;">預約人：${item.name || '匿名'}</div>
@@ -256,13 +257,20 @@
                         <small>${item.fullTime} | 狀態：${item.status}</small>
                     </div>`;
 
+                // 修改點：根據狀態決定接單按鈕顯示內容
+                // 如果已經接單，顯示灰色勾選文字；否則顯示金色的接單按鈕
+                const actionButton = item.status === '已接單' 
+                    ? `<span style="color:#666; font-size:13px; margin-right:10px;">✓ 已接單</span>`
+                    : `<button class="btn" style="width:auto; padding:5px 12px; font-size:12px;" onclick="updateStatus('${id}')">接單</button>`;
+
+                // 設計師端顯示
                 designDiv.innerHTML += `
                     <div class="history-item" style="position:relative;">
                         <strong>${item.name}</strong> (${item.phone})<br>
                         <span>項目：${item.service}</span><br>
                         <small>預約時間：${item.fullTime}</small>
                         <div style="margin-top:10px;">
-                            <button class="btn" style="width:auto; padding:5px 12px; font-size:12px;" onclick="updateStatus('${id}')">接單</button>
+                            ${actionButton}
                             <button class="btn" style="width:auto; padding:5px 12px; font-size:12px; border-color:red; color:red;" onclick="delBooking('${id}')">刪除</button>
                         </div>
                     </div>`;
