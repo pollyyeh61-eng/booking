@@ -43,9 +43,8 @@
 
         .glass-card { background: linear-gradient(145deg, #111, #000); border: 1px solid var(--gold-dim); border-radius: 24px; padding: 22px; margin-bottom: 20px; width: 100%; box-sizing: border-box; }
         
-        /* 選單樣式 */
-        select, input { width: 100%; padding: 15px; margin-bottom: 12px; background: #080808; border: 1.5px solid #222; border-radius: 12px; color: #fff; box-sizing: border-box; font-size: 15px; }
-        select { color: var(--gold-bright); border-color: var(--gold-dim); }
+        select, input { width: 100%; padding: 15px; margin-bottom: 12px; background: #080808; border: 1.5px solid #222; border-radius: 12px; color: #fff; box-sizing: border-box; font-size: 15px; outline: none; }
+        select { color: var(--gold-bright); border-color: var(--gold-dim); -webkit-appearance: none; }
 
         .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .service-item {
@@ -78,6 +77,7 @@
         .photo-wall-item span { display: block; font-size: 11px; color: var(--gold-bright); margin-top: 4px; }
         
         .badge { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #ccc; }
+        .badge.none { color: #d4af37; background: rgba(212, 175, 55, 0.1); }
     </style>
 </head>
 <body>
@@ -85,7 +85,7 @@
     <div id="client" class="panel active">
         <h1 style="color:var(--gold-bright); text-align:center; letter-spacing:10px; margin: 20px 0 5px;">VOGUE</h1>
         <div class="carousel-section">
-            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 髮型溝通範本 (點選欲回傳照片)</h4>
+            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 髮型溝本 (點選欲回傳照片)</h4>
             <div class="main-display-area">
                 <div class="nav-arrow prev-btn" onclick="prevImg()">&#10094;</div>
                 <img id="main-photo" src="https://via.placeholder.com/230x290/111/d4af37?text=VOGUE" alt="髮型展示">
@@ -98,6 +98,7 @@
         
         <div class="glass-card">
             <select id="selDesigner">
+                <option value="不指定">不指定 (由現場安排)</option>
                 <option value="設計師 A">預約 設計師 A</option>
                 <option value="設計師 B">預約 設計師 B</option>
             </select>
@@ -106,7 +107,7 @@
             <div class="service-grid">
                 <div class="service-item" onclick="toggleService(this)">洗髮</div>
                 <div class="service-item" onclick="toggleService(this)">剪髮</div>
-                <div class="service-item" onclick="toggleService(this)">洗剪</div>
+                <div class="service-item" onclick="toggleService(this)">洗加剪</div>
                 <div class="service-item" onclick="toggleService(this)">單色染髮</div>
                 <div class="service-item" onclick="toggleService(this)">雙色染髮</div>
                 <div class="service-item" onclick="toggleService(this)">漂髮設計</div>
@@ -166,18 +167,24 @@
         let currentIdx = 0;
         let allBookings = {};
         let selectedDateFilter = null;
-        let currentAuthUser = ""; // 紀錄當前登入的是誰
+        let currentAuthUser = "";
 
         window.onload = () => { if(document.getElementById('appDate')) document.getElementById('appDate').valueAsDate = new Date(); renderGallery(); initCalendar(); };
 
+        // 判斷當前設計師是否有權限看到該筆訂單 (含不指定)
+        function checkPermission(itemDesigner) {
+            if(currentAuthUser === "Admin") return true;
+            if(itemDesigner === currentAuthUser) return true;
+            if(itemDesigner === "不指定") return true; // 所有設計師都能看到不指定的單
+            return false;
+        }
+
         function updateCalendarHighlights() {
             const cells = document.querySelectorAll('.calendar-table td[data-date]');
-            // 修正：月曆標記只標記當前設計師看到的日期
-            const filteredDates = Object.values(allBookings)
-                .filter(b => currentAuthUser === "Admin" || b.designer === currentAuthUser)
-                .map(b => b.fullTime.split(' ')[0]);
+            const datesWithBookings = new Set(Object.values(allBookings)
+                .filter(b => checkPermission(b.designer))
+                .map(b => b.fullTime.split(' ')[0]));
             
-            const datesWithBookings = new Set(filteredDates);
             cells.forEach(cell => {
                 if(datesWithBookings.has(cell.dataset.date)) cell.classList.add('has-event');
                 else cell.classList.remove('has-event');
@@ -195,24 +202,23 @@
             const clientDiv = document.getElementById('my-list');
             const designDiv = document.getElementById('designer-content');
             clientDiv.innerHTML = ''; 
-            designDiv.innerHTML = `<h3>${selectedDateFilter ? selectedDateFilter + ' 名單' : '近期預約'}</h3>`;
+            designDiv.innerHTML = `<h3>${selectedDateFilter ? selectedDateFilter + ' 名單' : '預約管理'}</h3>`;
 
             Object.keys(allBookings).reverse().forEach(id => {
                 const item = allBookings[id];
                 const isAccepted = item.status === '已接單';
                 const photoHtml = item.refPhoto ? `<br><img src="${item.refPhoto}" class="ref-photo-thumb" onclick="window.open(this.src)">` : '';
+                const desBadge = `<small class="badge ${item.designer === '不指定' ? 'none' : ''}">${item.designer}</small>`;
 
                 if (myBookingIDs.includes(id)) {
-                    clientDiv.innerHTML += `<div class="history-item"><b>${item.name}</b> <small class="badge">${item.designer}</small><br><small>${item.fullTime} | ${item.status}</small>${photoHtml}</div>`;
+                    clientDiv.innerHTML += `<div class="history-item"><b>${item.name}</b> ${desBadge}<br><small>${item.fullTime} | ${item.status}</small>${photoHtml}</div>`;
                 }
 
-                // 分權邏輯：Admin 看全部，否則只看自己的單
-                const canSee = (currentAuthUser === "Admin" || item.designer === currentAuthUser);
                 const itemDate = item.fullTime.split(' ')[0];
-                if(canSee && (!selectedDateFilter || selectedDateFilter === itemDate)) {
+                if(checkPermission(item.designer) && (!selectedDateFilter || selectedDateFilter === itemDate)) {
                     designDiv.innerHTML += `
                         <div class="history-item">
-                            <strong>${item.name}</strong> (${item.phone}) <small class="badge">${item.designer}</small><br>
+                            <strong>${item.name}</strong> (${item.phone}) ${desBadge}<br>
                             <span>${item.service}</span><br>
                             <small>${item.fullTime}</small>
                             ${photoHtml}
@@ -229,7 +235,7 @@
             const wall = document.getElementById('photo-wall');
             wall.innerHTML = '';
             Object.values(allBookings).reverse().forEach(item => {
-                if(item.refPhoto && (currentAuthUser === "Admin" || item.designer === currentAuthUser)) {
+                if(item.refPhoto && checkPermission(item.designer)) {
                     wall.innerHTML += `
                         <div class="photo-wall-item">
                             <img src="${item.refPhoto}" onclick="window.open(this.src)">
@@ -250,21 +256,50 @@
 
             if(!name || !date || !time || !svcs.length) return alert("請填寫完整資訊");
 
-            const newPostRef = push(bookingRef);
-            update(newPostRef, {
+            push(bookingRef, {
                 designer, name, phone, service: svcs.join(', '),
                 fullTime: `${date} ${time}`, status: '待處理',
                 refPhoto: currentPhoto
-            }).then(() => { 
-                myBookingIDs.push(newPostRef.key);
+            }).then((snap) => { 
+                myBookingIDs.push(snap.key);
                 localStorage.setItem('vogue_my_bookings', JSON.stringify(myBookingIDs));
-                alert("預約成功！" + designer + " 已收到。"); 
+                alert("預約已送出！我們會盡快為您安排。"); 
                 document.getElementById('custName').value = '';
                 document.querySelectorAll('.service-item').forEach(e => e.classList.remove('selected'));
             });
         };
 
-        // 基本 UI 邏輯
+        // 基本 UI 切換與功能
+        window.switchTab = (t) => {
+            if(t === 'designer') {
+                const code = prompt("請輸入管理碼");
+                if(code === '1111') currentAuthUser = "設計師 A";
+                else if(code === '2222') currentAuthUser = "設計師 B";
+                else if(code === '3333') currentAuthUser = "設計師 C";
+                else if(code === '4444') currentAuthUser = "設計師 D";
+                else if(code === '5555') currentAuthUser = "設計師 E";
+                else if(code === '6666') currentAuthUser = "設計師 F";
+                else if(code === '7777') currentAuthUser = "設計師 G";
+                else if(code === '8888') currentAuthUser = "設計師 H";
+                else if(code === '9999') currentAuthUser = "設計師 I";
+                else if(code === '0000') currentAuthUser = "Admin";
+                else { alert("碼錯囉！"); return; }
+                document.getElementById('designer-title').innerText = currentAuthUser + " 後台";
+                updateCalendarHighlights(); renderLists(); renderPhotoWall();
+            }
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(t).classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + t).classList.add('active');
+        };
+
+        window.filterByDate = (dateStr) => {
+            selectedDateFilter = (selectedDateFilter === dateStr) ? null : dateStr;
+            document.querySelectorAll('.calendar-table td').forEach(td => td.classList.remove('selected-date'));
+            if(selectedDateFilter) document.querySelector(`.calendar-table td[data-date="${dateStr}"]`)?.classList.add('selected-date');
+            renderLists();
+        };
+
         function initCalendar() {
             const now = new Date(); const year = now.getFullYear(); const month = now.getMonth();
             document.getElementById('cal-month-title').innerText = `${year}年 ${month + 1}月`;
@@ -276,8 +311,8 @@
                 let row = document.createElement('tr');
                 for (let j = 0; j < 7; j++) {
                     let cell = document.createElement('td');
-                    if (i === 0 && j < firstDay) { cell.innerText = ''; }
-                    else if (date > daysInMonth) { break; }
+                    if (i === 0 && j < firstDay) cell.innerText = '';
+                    else if (date > daysInMonth) break;
                     else {
                         const fullDate = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
                         cell.innerText = date; cell.dataset.date = fullDate;
@@ -288,38 +323,7 @@
                 }
                 tbody.appendChild(row); if (date > daysInMonth) break;
             }
-            updateCalendarHighlights();
         }
-
-        window.filterByDate = (dateStr) => {
-            selectedDateFilter = (selectedDateFilter === dateStr) ? null : dateStr;
-            document.querySelectorAll('.calendar-table td').forEach(td => td.classList.remove('selected-date'));
-            if(selectedDateFilter) {
-                const target = document.querySelector(`.calendar-table td[data-date="${dateStr}"]`);
-                if(target) target.classList.add('selected-date');
-            }
-            renderLists();
-        };
-
-        window.switchTab = (t) => {
-            if(t === 'designer') {
-                const code = prompt("請輸入管理碼");
-                if(code === '1111') { currentAuthUser = "設計師 A"; }
-                else if(code === '2222') { currentAuthUser = "設計師 B"; }
-                else if(code === '0000') { currentAuthUser = "Admin"; }
-                else { alert("碼錯囉！"); return; }
-                
-                document.getElementById('designer-title').innerText = currentAuthUser + " 的後台";
-                updateCalendarHighlights();
-                renderLists();
-                renderPhotoWall();
-            }
-            
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-' + t).classList.add('active');
-        };
 
         window.handleFileUpload = (e) => {
             const file = e.target.files[0];
@@ -327,21 +331,15 @@
             reader.onload = (f) => {
                 photoList.push(f.target.result);
                 localStorage.setItem('vogue_local_photos', JSON.stringify(photoList));
-                currentIdx = photoList.length - 1;
-                renderGallery();
+                currentIdx = photoList.length - 1; renderGallery();
             };
             reader.readAsDataURL(file);
         };
         window.renderGallery = () => {
             const main = document.getElementById('main-photo');
             const cnt = document.getElementById('photo-counter');
-            if(photoList.length > 0) {
-                main.src = photoList[currentIdx];
-                cnt.innerText = `${currentIdx + 1} / ${photoList.length}`;
-            } else {
-                main.src = "https://via.placeholder.com/230x290/111/d4af37?text=VOGUE";
-                cnt.innerText = "0 / 0";
-            }
+            if(photoList.length > 0) { main.src = photoList[currentIdx]; cnt.innerText = `${currentIdx + 1} / ${photoList.length}`; }
+            else { main.src = "https://via.placeholder.com/230x290/111/d4af37?text=VOGUE"; cnt.innerText = "0 / 0"; }
         };
         window.nextImg = () => { if(photoList.length){ currentIdx = (currentIdx + 1) % photoList.length; renderGallery(); } };
         window.prevImg = () => { if(photoList.length){ currentIdx = (currentIdx - 1 + photoList.length) % photoList.length; renderGallery(); } };
