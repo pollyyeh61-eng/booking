@@ -21,50 +21,58 @@
             min-height: 100vh; padding-bottom: 120px;
         }
 
-        @keyframes luxuryBreathe {
-            0%, 100% { box-shadow: 0 0 12px var(--gold-dim); border-color: var(--gold-dim); }
-            50% { box-shadow: 0 0 25px var(--gold-glow); border-color: var(--gold-bright); }
+        /* 讓日期與時間的圖示顯示出來 */
+        input[type="date"], input[type="time"] {
+            position: relative;
+            min-height: 50px;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0; color: transparent; cursor: pointer; height: auto;
+            left: 0; position: absolute; right: 0; top: 0; width: auto;
+            filter: invert(1); /* 讓圖示變白色，在黑底中看得到 */
         }
 
         .panel { display: none; width: 92%; max-width: 420px; padding-top: 30px; }
         .panel.active { display: block; }
 
-        /* 輪播區 */
+        /* 輪播區修復 */
         .carousel-section { width: 100%; position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; }
-        .main-display-area { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 15px; overflow: hidden; }
+        .main-display-area { 
+            position: relative; width: 100%; height: 280px; 
+            display: flex; justify-content: center; align-items: center; margin-top: 15px; 
+        }
         #main-photo {
             width: 210px; height: 270px; object-fit: cover; border-radius: 18px;
             border: 2px solid var(--gold-bright); box-shadow: 0 0 20px var(--gold-glow);
-            z-index: 5; transition: 0.5s;
+            z-index: 5;
         }
         .nav-arrow {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 42px; height: 42px; border: 2px solid var(--gold-bright);
+            width: 45px; height: 45px; border: 2px solid var(--gold-bright);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.8); color: var(--gold-bright); font-size: 22px;
-            cursor: pointer; z-index: 10; box-shadow: 0 0 10px var(--gold-glow);
+            background: rgba(0,0,0,0.8); color: var(--gold-bright); font-size: 24px;
+            cursor: pointer; z-index: 10;
         }
-        .prev-btn { left: 8px; }
-        .next-btn { right: 8px; }
-        .thumb-circle { width: 50px; height: 50px; border-radius: 50%; border: 1px solid var(--gold-dim); object-fit: cover; opacity: 0.3; }
+        .prev-btn { left: 10px; }
+        .next-btn { right: 10px; }
 
         /* 複選標籤樣式 */
-        .service-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;
-        }
+        .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .service-item {
-            background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px;
+            background: #111; border: 1px solid #333; border-radius: 10px; padding: 12px 5px;
             font-size: 13px; text-align: center; cursor: pointer; transition: 0.3s; color: #888;
         }
         .service-item.selected {
             border-color: var(--gold-bright); color: var(--gold-bright);
-            background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 10px var(--gold-dim);
+            background: rgba(212, 175, 55, 0.15); box-shadow: 0 0 10px var(--gold-glow);
         }
 
         .glass-card {
             background: linear-gradient(145deg, #111, #000);
             border: 1px solid var(--gold-dim); border-radius: 24px;
-            padding: 22px; margin-bottom: 20px; animation: luxuryBreathe 4s infinite ease-in-out;
+            padding: 22px; margin-bottom: 20px;
         }
 
         input {
@@ -75,18 +83,17 @@
         .btn {
             width: 100%; padding: 16px; margin-top: 5px; border-radius: 15px; border: 1.8px solid var(--gold-bright);
             background: transparent; color: var(--gold-bright); font-size: 16px; font-weight: bold; cursor: pointer;
-            transition: 0.3s; letter-spacing: 3px;
+            letter-spacing: 3px;
         }
-        .btn:active { background: var(--gold-bright); color: #000; }
 
         .tab-switcher {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; background: #111; border-radius: 50px; padding: 5px; width: 220px;
+            display: flex; background: #111; border-radius: 50px; padding: 5px; width: 240px;
             border: 1px solid #333; z-index: 100;
         }
         .tab-btn {
-            flex: 1; padding: 10px; border-radius: 40px; border: none; background: transparent;
-            color: #666; font-size: 13px; cursor: pointer; transition: 0.3s;
+            flex: 1; padding: 12px; border-radius: 40px; border: none; background: transparent;
+            color: #666; font-size: 14px; cursor: pointer;
         }
         .tab-btn.active { background: var(--gold-bright); color: #000; font-weight: bold; }
 
@@ -105,14 +112,14 @@
         <div class="carousel-section">
             <div class="main-display-area">
                 <div class="nav-arrow prev-btn" onclick="prevImg()">&#10094;</div>
-                <img id="main-photo" src="" alt="作品展示">
+                <img id="main-photo" src="https://via.placeholder.com/210x270/111/d4af37?text=VOGUE" alt="作品展示">
                 <div class="nav-arrow next-btn" onclick="nextImg()">&#10095;</div>
             </div>
         </div>
         
         <div class="glass-card">
-            <h3 style="color:var(--gold-bright); margin:0 0 15px 0; font-weight:300;">選擇預約項目 (可多選)</h3>
-            <div class="service-grid" id="service-options">
+            <h3 style="color:var(--gold-bright); margin:0 0 15px 0; font-weight:300; font-size:16px;">選擇項目 (可多選)</h3>
+            <div class="service-grid">
                 <div class="service-item" onclick="toggleService(this)">剪髮</div>
                 <div class="service-item" onclick="toggleService(this)">洗髮加剪髮</div>
                 <div class="service-item" onclick="toggleService(this)">單色染髮</div>
@@ -135,7 +142,7 @@
         </div>
 
         <div id="history-section">
-            <h4 style="color:var(--gold-bright); margin-left:12px; font-weight:300;">最新預約動態</h4>
+            <h4 style="color:var(--gold-bright); margin-left:12px; font-weight:300;">預約動態</h4>
             <div id="my-list"></div>
         </div>
     </div>
@@ -144,8 +151,9 @@
         <h1 style="text-align:center; color:var(--gold-bright);">ATELIER</h1>
         <div class="glass-card">
             <h3>作品管理</h3>
-            <button class="btn" onclick="document.getElementById('photo-input').click()">📷 上傳新作品</button>
+            <button class="btn" onclick="document.getElementById('photo-input').click()">📷 選擇照片上傳</button>
             <input type="file" id="photo-input" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
+            <p style="font-size:10px; color:#666; margin-top:10px;">※ 圖片將儲存於此設備瀏覽器中</p>
         </div>
         <div id="designer-content"></div>
     </div>
@@ -181,67 +189,55 @@
             renderGallery();
         };
 
-        // 輪播
+        // --- 圖片輪播修復 ---
         window.renderGallery = function() {
             const main = document.getElementById('main-photo');
-            if (photoList.length === 0) {
-                main.src = "https://via.placeholder.com/210x270/111/d4af37?text=VOGUE";
-                return;
+            photoList = JSON.parse(localStorage.getItem('luxury_photos') || '[]');
+            if (photoList.length > 0) {
+                main.src = photoList[currentIdx];
             }
-            main.src = photoList[currentIdx];
         };
         window.nextImg = () => { if(photoList.length) { currentIdx = (currentIdx + 1) % photoList.length; renderGallery(); } };
         window.prevImg = () => { if(photoList.length) { currentIdx = (currentIdx - 1 + photoList.length) % photoList.length; renderGallery(); } };
 
-        // 複選標籤切換
-        window.toggleService = function(el) {
-            el.classList.toggle('selected');
-        };
+        // --- 複選與預約 ---
+        window.toggleService = (el) => el.classList.toggle('selected');
 
-        // 雲端預約功能
         window.addBooking = function() {
             const name = document.getElementById('custName').value;
             const phone = document.getElementById('custPhone').value;
             const date = document.getElementById('appDate').value;
             const time = document.getElementById('appTime').value;
-            
-            // 取得所有被選中的項目
-            const selectedItems = Array.from(document.querySelectorAll('.service-item.selected'))
-                                     .map(el => el.innerText);
+            const selected = Array.from(document.querySelectorAll('.service-item.selected')).map(el => el.innerText);
 
-            if(selectedItems.length === 0) return alert("請至少選擇一個預約項目");
-            if(!name || !date || !time) return alert("請填寫姓名與時間");
+            if(!selected.length || !name || !date || !time) return alert("請填寫完整預約資訊");
 
             push(bookingRef, {
-                name, phone, 
-                service: selectedItems.join(', '), // 將多個項目用逗號隔開
+                name, phone, service: selected.join(', '),
                 fullTime: `${date} ${time}`,
                 status: '待處理',
                 createdAt: Date.now()
             }).then(() => {
                 alert("預約成功！");
-                // 重設表單
-                document.querySelectorAll('.service-item').forEach(el => el.classList.remove('selected'));
-                document.getElementById('custName').value = '';
-                document.getElementById('custPhone').value = '';
+                location.reload(); // 成功後自動刷新清空
             });
         };
 
-        // 雲端同步
+        // --- 雲端同步 ---
         onValue(bookingRef, (snapshot) => {
             const data = snapshot.val();
             const clientDiv = document.getElementById('my-list');
             const designerDiv = document.getElementById('designer-content');
             clientDiv.innerHTML = '';
-            designerDiv.innerHTML = '<h3 style="color:var(--neon-blue);">訂單管理</h3>';
+            designerDiv.innerHTML = '<h3 style="color:var(--neon-blue);">後台訂單管理</h3>';
 
-            if (!data) return clientDiv.innerHTML = '<p style="color:#444; text-align:center;">目前無預約</p>';
+            if (!data) return;
 
             Object.keys(data).reverse().forEach(id => {
                 const item = data[id];
                 clientDiv.innerHTML += `
                     <div class="history-item">
-                        <div style="font-size:15px; font-weight:bold; color:var(--gold-bright);">${item.service}</div>
+                        <div style="font-weight:bold; color:var(--gold-bright);">${item.service}</div>
                         <div style="font-size:12px; color:#aaa; margin-top:5px;">📅 ${item.fullTime} | ${item.status}</div>
                     </div>`;
                 designerDiv.innerHTML += `
@@ -263,9 +259,11 @@
         window.handleFileUpload = (e) => {
             const reader = new FileReader();
             reader.onload = (f) => {
-                photoList.unshift(f.target.result);
-                localStorage.setItem('luxury_photos', JSON.stringify(photoList));
-                currentIdx = 0; renderGallery();
+                let photos = JSON.parse(localStorage.getItem('luxury_photos') || '[]');
+                photos.unshift(f.target.result);
+                localStorage.setItem('luxury_photos', JSON.stringify(photos));
+                alert("圖片已儲存至此裝置");
+                location.reload();
             };
             reader.readAsDataURL(e.target.files[0]);
         };
