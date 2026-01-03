@@ -5,12 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOGUE | 雲端預約系統</title>
     <style>
-        :root { --gold: #d4af37; --bg: #0a0a0a; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: #111; border: 1px solid var(--gold); border-radius: 15px; padding: 20px; width: 90%; max-width: 400px; margin-bottom: 20px; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; box-sizing: border-box; font-size: 16px; }
-        button { background: var(--gold); color: #000; font-weight: bold; cursor: pointer; border: none; margin-top: 15px; }
-        .booking-item { background: #1a1a1a; padding: 15px; border-left: 5px solid var(--gold); margin-bottom: 10px; border-radius: 5px; text-align: left; }
+        :root {
+            --dark-bg: #0a0a0a;
+            --gold-dim: rgba(212, 175, 55, 0.15);
+            --gold-bright: #d4af37;
+            --gold-glow: rgba(212, 175, 55, 0.5);
+            --neon-blue: #00f2ff;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'PingFang TC', sans-serif;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; padding-bottom: 120px;
+        }
+
+        /* 呼吸動畫 */
+        @keyframes luxuryBreathe {
+            0%, 100% { box-shadow: 0 0 12px var(--gold-dim); border-color: var(--gold-dim); }
+            50% { box-shadow: 0 0 25px var(--gold-glow); border-color: var(--gold-bright); }
+        }
+
+        .panel { display: none; width: 92%; max-width: 420px; padding-top: 30px; }
+        .panel.active { display: block; }
+
+        /* ====== 作品輪播區 (依據 image_3fa646) ====== */
+        .carousel-section { width: 100%; position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; }
+        .main-display-area { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 15px; overflow: hidden; }
+        #main-photo {
+            width: 210px; height: 270px; object-fit: cover; border-radius: 18px;
+            border: 2px solid var(--gold-bright); box-shadow: 0 0 20px var(--gold-glow);
+            z-index: 5; transition: 0.5s;
+        }
+        .nav-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 42px; height: 42px; border: 2px solid var(--gold-bright);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.8); color: var(--gold-bright); font-size: 22px;
+            cursor: pointer; z-index: 10; box-shadow: 0 0 10px var(--gold-glow);
+        }
+        .prev-btn { left: 8px; }
+        .next-btn { right: 8px; }
+        .side-thumbs { position: absolute; display: flex; gap: 5px; opacity: 0.25; filter: blur(1px); }
+        .side-thumbs.left { left: -75px; }
+        .side-thumbs.right { right: -75px; }
+        .thumb-circle { width: 50px; height: 50px; border-radius: 50%; border: 1px solid var(--gold-dim); object-fit: cover; }
+
+        /* ====== 預約區 & 表單 (修正日期時間選擇方式) ====== */
+        .glass-card {
+            background: linear-gradient(145deg, #111, #000);
+            border: 1px solid var(--gold-dim); border-radius: 24px;
+            padding: 22px; margin-bottom: 20px; animation: luxuryBreathe 4s infinite ease-in-out;
+        }
+
+        input, select {
+            width: 100%; padding: 15px; margin-bottom: 12px; background: #080808; border: 1.5px solid #222;
+            border-radius: 12px; color: #fff; box-sizing: border-box; font-size: 15px;
+            appearance: none; -webkit-appearance: none;
+        }
+        
+        /* 強制顯示日曆與時間圖示 */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(70%) sepia(50%) saturate(1000%) hue-rotate(10deg);
+            cursor: pointer; font-size: 18px;
+        }
+
+        .btn {
+            width: 100%; padding: 16px; margin-top: 5px; border-radius: 15px; border: 1.8px solid var(--gold-bright);
+            background: transparent; color: var(--gold-bright); font-size: 16px; font-weight: bold; cursor: pointer;
+            transition: 0.3s; letter-spacing: 3px;
+        }
+        .btn:active { background: var(--gold-bright); color: #000; }
+
+        /* ====== 底部切換鈕 ====== */
+        .tab-switcher {
+            display: flex; background: #111; border-radius: 50px; padding: 5px; margin: 20px auto; width: 220px;
+            border: 1px solid #333;
+        }
+        .tab-btn {
+            flex: 1; padding: 10px; border-radius: 40px; border: none; background: transparent;
+            color: #666; font-size: 13px; cursor: pointer; transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--gold-bright); color: #000; font-weight: bold; }
+
+        /* 預約歷史清單 */
+        .history-item {
+            background: rgba(255,255,255,0.04); padding: 16px; border-radius: 18px;
+            margin-bottom: 12px; border-left: 4px solid var(--gold-bright);
+        }
     </style>
 </head>
 <body>
@@ -112,3 +196,4 @@
     </script>
 </body>
 </html>
+
