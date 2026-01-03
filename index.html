@@ -10,7 +10,6 @@
             --gold-dim: rgba(212, 175, 55, 0.15);
             --gold-bright: #d4af37;
             --gold-glow: rgba(212, 175, 55, 0.5);
-            --neon-blue: #00f2ff;
         }
 
         body {
@@ -31,6 +30,7 @@
         .panel { display: none; width: 92%; max-width: 420px; padding-top: 30px; }
         .panel.active { display: block; }
 
+        /* 輪播區 */
         .carousel-section { width: 100%; position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; }
         .main-display-area { position: relative; width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
         #main-photo {
@@ -121,8 +121,8 @@
     <div id="designer" class="panel">
         <h1 style="text-align:center; color:var(--gold-bright);">ATELIER</h1>
         <div class="glass-card">
-            <h3>作品集管理</h3>
-            <button class="btn" onclick="document.getElementById('photo-input').click()">📷 新增照片 (雲端上傳)</button>
+            <h3>溝通照片管理</h3>
+            <button class="btn" onclick="document.getElementById('photo-input').click()">📷 新增照片 (儲存於本機)</button>
             <input type="file" id="photo-input" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
             <div class="photo-manage-list" id="photo-manage-list"></div>
         </div>
@@ -151,70 +151,62 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const bookingRef = ref(db, 'vogue_bookings');
-        const photoRef = ref(db, 'vogue_cloud_photos');
 
-        let cloudPhotos = [];
+        // --- 手機本地相簿邏輯 ---
+        let photoList = JSON.parse(localStorage.getItem('vogue_local_photos') || '[]');
         let currentIdx = 0;
 
-        // 初始化
         window.onload = () => {
             const d = document.getElementById('appDate');
             if(d) d.valueAsDate = new Date();
-        };
-
-        // --- 雲端照片邏輯 (Imgur 版) ---
-        onValue(photoRef, (snap) => {
-            const data = snap.val();
-            cloudPhotos = data ? Object.entries(data).map(([id, val]) => ({id, url: val.url})) : [];
             renderGallery();
             renderPhotoManager();
-        });
+        };
 
-        window.handleFileUpload = async (e) => {
+        window.handleFileUpload = (e) => {
             const file = e.target.files[0];
             if(!file) return;
-            alert("正在上傳至雲端，請稍候...");
-            
-            const formData = new FormData();
-            formData.append('image', file);
-
-            try {
-                const res = await fetch('https://api.imgur.com/3/image', {
-                    method: 'POST',
-                    headers: { Authorization: 'Client-ID 544bb39fb042f88' },
-                    body: formData
-                });
-                const resData = await res.json();
-                if(resData.success) {
-                    push(photoRef, { url: resData.data.link, createdAt: Date.now() });
-                    alert("上傳成功！");
-                }
-            } catch (err) { alert("上傳失敗，請重試"); }
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                photoList.push(f.target.result);
+                localStorage.setItem('vogue_local_photos', JSON.stringify(photoList));
+                renderGallery(); 
+                renderPhotoManager();
+            };
+            reader.readAsDataURL(file);
         };
 
         window.renderGallery = () => {
             const main = document.getElementById('main-photo');
             const cnt = document.getElementById('photo-counter');
-            if(cloudPhotos.length > 0) {
-                main.src = cloudPhotos[currentIdx].url;
-                cnt.innerText = `${currentIdx + 1} / ${cloudPhotos.length}`;
+            if(photoList.length > 0) {
+                main.src = photoList[currentIdx];
+                cnt.innerText = `${currentIdx + 1} / ${photoList.length}`;
             } else {
                 main.src = "https://via.placeholder.com/230x290/111/d4af37?text=VOGUE";
                 cnt.innerText = "0 / 0";
             }
         };
 
-        window.nextImg = () => { if(cloudPhotos.length){ currentIdx = (currentIdx + 1) % cloudPhotos.length; renderGallery(); } };
-        window.prevImg = () => { if(cloudPhotos.length){ currentIdx = (currentIdx - 1 + cloudPhotos.length) % cloudPhotos.length; renderGallery(); } };
+        window.nextImg = () => { if(photoList.length){ currentIdx = (currentIdx + 1) % photoList.length; renderGallery(); } };
+        window.prevImg = () => { if(photoList.length){ currentIdx = (currentIdx - 1 + photoList.length) % photoList.length; renderGallery(); } };
 
         window.renderPhotoManager = () => {
             const list = document.getElementById('photo-manage-list');
             list.innerHTML = '';
-            cloudPhotos.forEach((item, i) => {
-                list.innerHTML += `<div class="photo-manage-item"><img src="${item.url}"><button class="del-photo-btn" onclick="deletePhoto('${item.id}')">×</button></div>`;
+            photoList.forEach((src, i) => {
+                list.innerHTML += `<div class="photo-manage-item"><img src="${src}"><button class="del-photo-btn" onclick="deletePhoto(${i})">×</button></div>`;
             });
         };
-        window.deletePhoto = (id) => { if(confirm("確定刪除此照片？")) remove(ref(db, `vogue_cloud_photos/${id}`)); };
+        window.deletePhoto = (i) => { 
+            if(confirm("確定刪除此照片？")) {
+                photoList.splice(i, 1); 
+                localStorage.setItem('vogue_local_photos', JSON.stringify(photoList)); 
+                if(currentIdx >= photoList.length) currentIdx = 0;
+                renderGallery(); 
+                renderPhotoManager(); 
+            }
+        };
 
         // --- 預約邏輯 ---
         window.toggleService = (el) => el.classList.toggle('selected');
@@ -225,7 +217,7 @@
             const time = document.getElementById('appTime').value;
             const svcs = Array.from(document.querySelectorAll('.service-item.selected')).map(el => el.innerText);
 
-            if(!name || !date || !time || !svcs.length) return alert("請填寫完整預約資訊");
+            if(!name || !date || !time || !svcs.length) return alert("請填寫完整資訊");
 
             push(bookingRef, {
                 name, phone, service: svcs.join(', '),
@@ -238,7 +230,7 @@
             });
         };
 
-        // --- 監聽預約清單 (加入接單狀態邏輯) ---
+        // --- 監聽數據 (接單後按鈕會變) ---
         onValue(bookingRef, (snap) => {
             const data = snap.val();
             const clientDiv = document.getElementById('my-list');
@@ -248,30 +240,27 @@
 
             Object.keys(data).reverse().forEach(id => {
                 const item = data[id];
-                
-                // 客戶端顯示
+                const isAccepted = item.status === '已接單';
+
                 clientDiv.innerHTML += `
                     <div class="history-item">
-                        <div style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;">預約人：${item.name || '匿名'}</div>
+                        <div style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;">預約人：${item.name}</div>
                         <strong>${item.service}</strong><br>
-                        <small>${item.fullTime} | 狀態：${item.status}</small>
+                        <small>${item.fullTime} | 狀態：<span style="color:${isAccepted ? '#00ff00' : '#fff'}">${item.status}</span></small>
                     </div>`;
 
-                // 修改點：根據狀態決定接單按鈕顯示內容
-                // 如果已經接單，顯示灰色勾選文字；否則顯示金色的接單按鈕
-                const actionButton = item.status === '已接單' 
-                    ? `<span style="color:#666; font-size:13px; margin-right:10px;">✓ 已接單</span>`
-                    : `<button class="btn" style="width:auto; padding:5px 12px; font-size:12px;" onclick="updateStatus('${id}')">接單</button>`;
+                const actionHtml = isAccepted 
+                    ? `<span style="color:#666; font-size:14px; margin-right:15px; font-weight:bold;">✓ 已接單</span>`
+                    : `<button class="btn" style="width:auto; padding:5px 15px; font-size:12px; margin-right:10px;" onclick="updateStatus('${id}')">接單</button>`;
 
-                // 設計師端顯示
                 designDiv.innerHTML += `
                     <div class="history-item" style="position:relative;">
                         <strong>${item.name}</strong> (${item.phone})<br>
                         <span>項目：${item.service}</span><br>
                         <small>預約時間：${item.fullTime}</small>
-                        <div style="margin-top:10px;">
-                            ${actionButton}
-                            <button class="btn" style="width:auto; padding:5px 12px; font-size:12px; border-color:red; color:red;" onclick="delBooking('${id}')">刪除</button>
+                        <div style="margin-top:10px; display:flex; align-items:center;">
+                            ${actionHtml}
+                            <button class="btn" style="width:auto; padding:5px 15px; font-size:12px; border-color:red; color:red;" onclick="delBooking('${id}')">刪除</button>
                         </div>
                     </div>`;
             });
@@ -280,6 +269,7 @@
         window.updateStatus = (id) => update(ref(db, `vogue_bookings/${id}`), { status: '已接單' });
         window.delBooking = (id) => { if(confirm("確定刪除？")) remove(ref(db, `vogue_bookings/${id}`)); };
 
+        let isAuth = false;
         window.switchTab = (t) => {
             if(t === 'designer' && !isAuth) {
                 if(prompt("請輸入管理碼") !== '0000') return;
@@ -290,7 +280,6 @@
             document.getElementById(t).classList.add('active');
             document.getElementById('btn-' + t).classList.add('active');
         };
-        let isAuth = false;
     </script>
 </body>
 </html>
