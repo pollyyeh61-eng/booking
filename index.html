@@ -274,7 +274,7 @@
             }).then(() => { 
                 myBookingIDs.push(newPostRef.key);
                 localStorage.setItem('vogue_my_bookings', JSON.stringify(myBookingIDs));
-                alert("預約成功！設計師已收到照片。"); 
+                alert("預約成功！"); 
                 document.getElementById('custName').value = '';
                 document.querySelectorAll('.service-item').forEach(e => e.classList.remove('selected'));
             });
@@ -322,4 +322,5 @@
     </script>
 </body>
 </html>
+
 
