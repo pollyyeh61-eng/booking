@@ -83,7 +83,7 @@
                 <div class="nav-arrow next-btn" onclick="nextImg()">&#10095;</div>
             </div>
             <p id="photo-counter" style="color:#666; font-size:12px; margin-top:10px;">0 / 0</p>
-            <button class="btn" style="width:80%; margin-top:10px; font-size:14px;" onclick="document.getElementById('photo-input').click()">📷 上傳我的參考照</button>
+            <button class="btn" style="width:80%; margin-top:10px; font-size:14px;" onclick="document.getElementById('photo-input').click()">📷 上傳我要溝通的照片</button>
             <input type="file" id="photo-input" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
         </div>
         
@@ -103,7 +103,7 @@
                 <div class="service-item" onclick="toggleService(this)">髮質護理</div>
             </div>
             <div style="display: flex; gap: 10px;"><input type="date" id="appDate"><input type="time" id="appTime"></div>
-            <button class="btn" onclick="addBooking()">送出預約並回傳照片</button>
+            <button class="btn" onclick="addBooking()">送出預約</button>
         </div>
         <div id="history-section"><div id="my-list"></div></div>
     </div>
@@ -257,7 +257,7 @@
             }).then(() => { 
                 myBookingIDs.push(newPostRef.key);
                 localStorage.setItem('vogue_my_bookings', JSON.stringify(myBookingIDs));
-                alert("預約成功！設計師已收到照片。"); 
+                alert("預約成功！"); 
                 document.getElementById('custName').value = '';
                 document.querySelectorAll('.service-item').forEach(e => e.classList.remove('selected'));
             });
@@ -302,4 +302,5 @@
     </script>
 </body>
 </html>
+
 
