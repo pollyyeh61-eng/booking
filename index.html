@@ -46,19 +46,29 @@
         import { getDatabase, ref, push, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // *** 請在此處替換為您的 Firebase 專案設定 ***
-        const firebaseConfig = {
-            apiKey: "您的API金鑰",
-            authDomain: "booking-af275.firebaseapp.com",
-            databaseURL: "https://booking-af275-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "booking-af275",
-            storageBucket: "booking-af275.appspot.com",
-            messagingSenderId: "您的傳送ID",
-            appId: "您的AppID"
-        };
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const bookingRef = ref(db, 'vogue_bookings');
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD0TcQWJOP6Bm9qOt85fKXcx1boTq3RfNE",
+  authDomain: "booking-af275.firebaseapp.com",
+  databaseURL: "https://booking-af275-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "booking-af275",
+  storageBucket: "booking-af275.firebasestorage.app",
+  messagingSenderId: "252618990418",
+  appId: "1:252618990418:web:6e7bd13e8af50a418ed08b",
+  measurementId: "G-W5JZFJMQDB"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+;
 
         // 客人存檔功能
         window.saveToCloud = function() {
@@ -104,4 +114,5 @@
     </script>
 </body>
 </html>
+
 
