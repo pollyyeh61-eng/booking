@@ -8,9 +8,9 @@
         :root { --gold: #d4af37; --bg: #0a0a0a; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .card { background: #111; border: 1px solid var(--gold); border-radius: 15px; padding: 20px; width: 90%; max-width: 400px; margin-bottom: 20px; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; box-sizing: border-box; }
-        button { background: var(--gold); color: #000; font-weight: bold; cursor: pointer; border: none; }
-        .booking-item { background: #1a1a1a; padding: 15px; border-left: 5px solid var(--gold); margin-bottom: 10px; border-radius: 5px; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; box-sizing: border-box; font-size: 16px; }
+        button { background: var(--gold); color: #000; font-weight: bold; cursor: pointer; border: none; margin-top: 15px; }
+        .booking-item { background: #1a1a1a; padding: 15px; border-left: 5px solid var(--gold); margin-bottom: 10px; border-radius: 5px; text-align: left; }
     </style>
 </head>
 <body>
@@ -20,16 +20,16 @@
     <div class="card">
         <input type="text" id="custName" placeholder="顧客姓名">
         <select id="custService">
-                <option value="單色染髮">單色染髮</option>
-                <option value="雙色染髮">雙色染髮</option>
-                <option value="漂染髮">漂染髮</option>
-                <option value="染前頭皮保養套餐">染前頭皮保養套餐</option>
-                <option value="剪髮">剪髮</option>
-                <option value="洗髮加剪髮">洗髮加剪髮</option>
-                <option value="熱塑燙髮">熱塑燙髮</option>
-                <option value="冷塑燙髮">冷塑燙髮</option>
-                <option value="頂級頭皮養護">頂級頭皮養護</option>
-                <option value="頂級護髮套餐">頂級護髮套餐</option>
+            <option value="單色染髮">單色染髮</option>
+            <option value="雙色染髮">雙色染髮</option>
+            <option value="漂染髮">漂染髮</option>
+            <option value="染前頭皮保養套餐">染前頭皮保養套餐</option>
+            <option value="剪髮">剪髮</option>
+            <option value="洗髮加剪髮">洗髮加剪髮</option>
+            <option value="熱塑燙髮">熱塑燙髮</option>
+            <option value="冷塑燙髮">冷塑燙髮</option>
+            <option value="頂級頭皮養護">頂級頭皮養護</option>
+            <option value="頂級護髮套餐">頂級護髮套餐</option>
         </select>
         <input type="date" id="appDate">
         <input type="time" id="appTime">
@@ -42,64 +42,62 @@
     </div>
 
     <script type="module">
+        // 正確引入 Firebase 功能
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // *** 請在此處替換為您的 Firebase 專案設定 ***
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+        // 使用您截圖中的專案設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0TcQWJOP6Bm9qOt85fKXcx1boTq3RfNE",
+            authDomain: "booking-af275.firebaseapp.com",
+            databaseURL: "https://booking-af275-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "booking-af275",
+            storageBucket: "booking-af275.firebasestorage.app",
+            messagingSenderId: "252618990418",
+            appId: "1:252618990418:web:6e7bd13e8af50a418ed08b"
+        };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyD0TcQWJOP6Bm9qOt85fKXcx1boTq3RfNE",
-  authDomain: "booking-af275.firebaseapp.com",
-  databaseURL: "https://booking-af275-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "booking-af275",
-  storageBucket: "booking-af275.firebasestorage.app",
-  messagingSenderId: "252618990418",
-  appId: "1:252618990418:web:6e7bd13e8af50a418ed08b",
-  measurementId: "G-W5JZFJMQDB"
-};
+        // 初始化
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const bookingRef = ref(db, 'vogue_bookings'); // 修正：定義資料庫路徑
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-;
-
-        // 客人存檔功能
+        // 客人送出功能
         window.saveToCloud = function() {
             const name = document.getElementById('custName').value;
             const service = document.getElementById('custService').value;
-            const time = document.getElementById('appDate').value + ' ' + document.getElementById('appTime').value;
+            const date = document.getElementById('appDate').value;
+            const time = document.getElementById('appTime').value;
 
-            if(!name || !time) return alert("請填寫完整");
+            if(!name || !date || !time) return alert("請填寫完整資訊");
 
             push(bookingRef, {
                 name: name,
                 service: service,
-                time: time,
+                time: date + " " + time,
                 createdAt: Date.now()
             }).then(() => {
-                alert("預約已存入雲端！您現在可以查看下方清單。");
+                alert("預約成功！資料已同步至雲端。");
+                // 清空欄位
+                document.getElementById('custName').value = "";
+            }).catch((error) => {
+                alert("儲存失敗，請檢查 Firebase 規則是否已發佈為 true");
+                console.error(error);
             });
         };
 
-        // 設計師自動讀取功能 (這就是您要的功能！)
+        // 設計師讀取功能
         onValue(bookingRef, (snapshot) => {
             const listDiv = document.getElementById('booking-list');
             listDiv.innerHTML = "";
             const data = snapshot.val();
             
             if (!data) {
-                listDiv.innerHTML = "目前尚無預約。";
+                listDiv.innerHTML = "目前尚無預約紀錄。";
                 return;
             }
 
-            // 將資料轉成陣列並排序
+            // 排序：最新的在上面
             const sortedItems = Object.values(data).sort((a, b) => b.createdAt - a.createdAt);
 
             sortedItems.forEach(item => {
@@ -114,5 +112,3 @@ const analytics = getAnalytics(app);
     </script>
 </body>
 </html>
-
-
