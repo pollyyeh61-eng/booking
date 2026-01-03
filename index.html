@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOGUE | 雲端預約系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極致黑金 | 尊爵美學系統</title>
     <style>
         :root {
             --dark-bg: #0a0a0a;
@@ -99,36 +99,111 @@
 </head>
 <body>
 
-    <h1 style="color:var(--gold);">VOGUE 雲端預約</h1>
+    <div id="client" class="panel active">
+        <h1 style="color:var(--gold-bright); text-align:center; letter-spacing:10px; margin: 20px 0 5px;">VOGUE</h1>
+        <p style="text-align:center; font-size:10px; color:#444; letter-spacing:4px; margin-bottom:20px;">EXQUISITE BEAUTY SERVICE</p>
 
-    <div class="card">
-        <input type="text" id="custName" placeholder="顧客姓名">
-        <select id="custService">
-            <option value="單色染髮">單色染髮</option>
-            <option value="雙色染髮">雙色染髮</option>
-            <option value="漂染髮">漂染髮</option>
-            <option value="染前頭皮保養套餐">染前頭皮保養套餐</option>
-            <option value="剪髮">剪髮</option>
-            <option value="洗髮加剪髮">洗髮加剪髮</option>
-            <option value="熱塑燙髮">熱塑燙髮</option>
-            <option value="冷塑燙髮">冷塑燙髮</option>
-            <option value="頂級頭皮養護">頂級頭皮養護</option>
-            <option value="頂級護髮套餐">頂級護髮套餐</option>
-        </select>
-        <input type="date" id="appDate">
-        <input type="time" id="appTime">
-        <button onclick="saveToCloud()">送出預約 (同步雲端)</button>
+        <div class="carousel-section">
+            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 尊榮作品集</h4>
+            <div class="main-display-area">
+                <div class="nav-arrow prev-btn" onclick="prevImg()">&#10094;</div>
+                <div class="side-thumbs left" id="thumbs-left"></div>
+                <img id="main-photo" src="" alt="作品展示">
+                <div class="side-thumbs right" id="thumbs-right"></div>
+                <div class="nav-arrow next-btn" onclick="nextImg()">&#10095;</div>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <h3 style="color:var(--gold-bright); margin:0 0 15px 0; font-weight:300;">立即預約</h3>
+            <input type="text" id="custName" placeholder="顧客姓名">
+            <input type="tel" id="custPhone" placeholder="聯繫電話">
+            <select id="custService">
+                <option value="單色染髮">單色染髮</option>
+                <option value="雙色染髮">雙色染髮</option>
+                <option value="漂染髮">漂染髮</option>
+                <option value="染前頭皮保養套餐">染前頭皮保養套餐</option>
+                <option value="剪髮">剪髮</option>
+                <option value="洗髮加剪髮">洗髮加剪髮</option>
+                <option value="熱塑燙髮">熱塑燙髮</option>
+                <option value="冷塑燙髮">冷塑燙髮</option>
+                <option value="頂級頭皮養護">頂級頭皮養護</option>
+                <option value="頂級護髮套餐">頂級護髮套餐</option>
+            </select>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="appDate">
+                <input type="time" id="appTime">
+            </div>
+            <button class="btn" onclick="addBooking()">確認預約</button>
+        </div>
+
+        <div id="history-section">
+            <h4 style="color:var(--gold-bright); margin-left:12px; font-weight:300;">預約歷史</h4>
+            <div id="my-list"></div>
+        </div>
     </div>
 
-    <div id="admin-panel" style="width: 90%; max-width: 400px;">
-        <h3 style="color:var(--gold); border-bottom: 1px solid #333;">設計師後台 (即時清單)</h3>
-        <div id="booking-list">載入中...</div>
+    <div id="designer" class="panel">
+        <h1 style="text-align:center; color:var(--gold-bright);">ATELIER</h1>
+        <div class="glass-card">
+            <h3>作品管理</h3>
+            <button class="btn" onclick="document.getElementById('photo-input').click()">📷 拍照上傳新作品</button>
+            <input type="file" id="photo-input" style="display:none" accept="image/*" onchange="handleFileUpload(event)">
+        </div>
+        <div id="designer-content"></div>
     </div>
 
-    <script type="module">
-        // 正確引入 Firebase 功能
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <div class="tab-switcher">
+        <button class="tab-btn active" id="btn-client" onclick="switchTab('client')">客戶入口</button>
+        <button class="tab-btn" id="btn-designer" onclick="switchTab('designer')">設計師後台</button>
+    </div>
+
+    <script>
+        const PWD = '0000';
+        let isAuth = false;
+        let photoList = [];
+        let currentIdx = 0;
+
+        window.onload = function() {
+            // 自動設定日期為今天
+            document.getElementById('appDate').valueAsDate = new Date();
+            renderAll();
+        };
+
+        function switchTab(t) {
+            if (t === 'designer' && !isAuth) {
+                if (prompt("授權密碼") !== PWD) return;
+                isAuth = true;
+            }
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(t).classList.add('active');
+            document.getElementById('btn-' + t).classList.add('active');
+            renderAll();
+        }
+
+        // --- 輪播邏輯 ---
+        function renderGallery() {
+            photoList = JSON.parse(localStorage.getItem('luxury_photos') || '[]');
+            const main = document.getElementById('main-photo');
+            const lT = document.getElementById('thumbs-left');
+            const rT = document.getElementById('thumbs-right');
+
+            if (photoList.length === 0) {
+                main.src = "https://via.placeholder.com/210x270/111/d4af37?text=VOGUE";
+                return;
+            }
+            main.src = photoList[currentIdx];
+            lT.innerHTML = ''; rT.innerHTML = '';
+            for(let i=1; i<=2; i++){
+                let l = (currentIdx - i + photoList.length) % photoList.length;
+                let r = (currentIdx + i) % photoList.length;
+                lT.innerHTML += `<img src="${photoList[l]}" class="thumb-circle">`;
+                rT.innerHTML += `<img src="${photoList[r]}" class="thumb-circle">`;
+            }
+        }
+        function nextImg() { currentIdx = (currentIdx + 1) % photoList.length; renderGallery(); }
+        function prevImg() { currentIdx = (currentIdx - 1 + photoList.length) % photoList.length; renderGallery(); }
 
         // 使用您截圖中的專案設定
         const firebaseConfig = {
@@ -139,61 +214,79 @@
             storageBucket: "booking-af275.firebasestorage.app",
             messagingSenderId: "252618990418",
             appId: "1:252618990418:web:6e7bd13e8af50a418ed08b"
-        };
+        }
 
-        // 初始化
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const bookingRef = ref(db, 'vogue_bookings'); // 修正：定義資料庫路徑
-
-        // 客人送出功能
-        window.saveToCloud = function() {
+        // --- 預約邏輯 ---
+        function addBooking() {
             const name = document.getElementById('custName').value;
-            const service = document.getElementById('custService').value;
             const date = document.getElementById('appDate').value;
             const time = document.getElementById('appTime').value;
+            const serv = document.getElementById('custService').value;
+            if(!name || !date || !time) return alert("請完整填寫日期與時間");
 
-            if(!name || !date || !time) return alert("請填寫完整資訊");
-
-            push(bookingRef, {
+            let db = JSON.parse(localStorage.getItem('luxury_db') || '[]');
+            db.push({
+                id: Date.now(),
                 name: name,
-                service: service,
-                time: date + " " + time,
-                createdAt: Date.now()
-            }).then(() => {
-                alert("預約成功！資料已同步至雲端。");
-                // 清空欄位
-                document.getElementById('custName').value = "";
-            }).catch((error) => {
-                alert("儲存失敗，請檢查 Firebase 規則是否已發佈為 true");
-                console.error(error);
+                service: serv,
+                fullTime: `${date} ${time}`,
+                status: '待處理'
             });
-        };
+            localStorage.setItem('luxury_db', JSON.stringify(db));
+            alert("預約成功！設計師將儘快為您確認");
+            renderAll();
+        }
 
-        // 設計師讀取功能
-        onValue(bookingRef, (snapshot) => {
-            const listDiv = document.getElementById('booking-list');
-            listDiv.innerHTML = "";
-            const data = snapshot.val();
+        function handleFileUpload(e) {
+            const reader = new FileReader();
+            reader.onload = function(f) {
+                let photos = JSON.parse(localStorage.getItem('luxury_photos') || '[]');
+                photos.unshift(f.target.result);
+                localStorage.setItem('luxury_photos', JSON.stringify(photos));
+                currentIdx = 0;
+                renderAll();
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function renderAll() {
+            renderGallery();
+            const list = JSON.parse(localStorage.getItem('luxury_db') || '[]');
+            const clientDiv = document.getElementById('my-list');
+            const designerDiv = document.getElementById('designer-content');
             
-            if (!data) {
-                listDiv.innerHTML = "目前尚無預約紀錄。";
-                return;
-            }
-
-            // 排序：最新的在上面
-            const sortedItems = Object.values(data).sort((a, b) => b.createdAt - a.createdAt);
-
-            sortedItems.forEach(item => {
-                listDiv.innerHTML += `
-                    <div class="booking-item">
-                        <strong>${item.name}</strong> - ${item.service}<br>
-                        <small style="color:#888;">預約時間：${item.time}</small>
-                    </div>
-                `;
+            // 渲染客戶歷史 (解決 image_3fb226 的顯示問題)
+            clientDiv.innerHTML = '';
+            list.slice().reverse().forEach(item => {
+                clientDiv.innerHTML += `
+                    <div class="history-item">
+                        <div style="font-size:16px; font-weight:bold; color:var(--gold-bright);">${item.service}</div>
+                        <div style="font-size:12px; color:#aaa; margin-top:5px;">
+                            📅 ${item.fullTime} <br> 
+                            狀態：<span style="color:#fff;">${item.status}</span>
+                        </div>
+                    </div>`;
             });
-        });
+
+            if (isAuth) {
+                designerDiv.innerHTML = '<h3 style="color:var(--neon-blue);">接單管理</h3>';
+                list.forEach((item, index) => {
+                    designerDiv.innerHTML += `
+                        <div class="history-item" style="border-left-color:var(--neon-blue)">
+                            <strong>${item.name}</strong> - ${item.service}<br>
+                            <small>${item.fullTime}</small><br>
+                            ${item.status === '待處理' ? `<button class="btn" style="padding:5px; font-size:12px; margin-top:8px;" onclick="confirmOrder(${index})">接受預約</button>` : '✓ 已接單'}
+                        </div>`;
+                });
+            }
+        }
+
+        function confirmOrder(idx) {
+            let list = JSON.parse(localStorage.getItem('luxury_db') || '[]');
+            list[idx].status = '已接單';
+            localStorage.setItem('luxury_db', JSON.stringify(list));
+            renderAll();
+        }
     </script>
 </body>
 </html>
-
