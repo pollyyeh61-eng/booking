@@ -85,7 +85,7 @@
     <div id="client" class="panel active">
         <h1 style="color:var(--gold-bright); text-align:center; letter-spacing:10px; margin: 20px 0 5px;">VOGUE</h1>
         <div class="carousel-section">
-            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 髮型溝本 (點選欲回傳照片)</h4>
+            <h4 style="color:var(--gold-bright); font-weight:300; margin:0; font-size:14px;">✨ 髮型溝通 (點選欲回傳照片)</h4>
             <div class="main-display-area">
                 <div class="nav-arrow prev-btn" onclick="prevImg()">&#10094;</div>
                 <img id="main-photo" src="https://via.placeholder.com/230x290/111/d4af37?text=VOGUE" alt="髮型展示">
@@ -147,34 +147,27 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+        // 您的 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
+            authDomain: "holyhairsalon-f73bf.firebaseapp.com",
+            databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
+            projectId: "holyhairsalon-f73bf",
+            storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
+            messagingSenderId: "960169055224",
+            appId: "1:960169055224:web:2dd9017ef2e96803bf3c0d",
+            measurementId: "G-F2H0P4KF4L"
+        };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-  authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-  databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-  projectId: "holyhairsalon-f73bf",
-  storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-  messagingSenderId: "960169055224",
-  appId: "1:960169055224:web:2dd9017ef2e96803bf3c0d",
-  measurementId: "G-F2H0P4KF4L"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
+        // 初始化 Firebase (僅需一次)
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const analytics = getAnalytics(app);
         const bookingRef = ref(db, 'vogue_bookings');
 
+        // 狀態變數
         let photoList = JSON.parse(localStorage.getItem('vogue_local_photos') || '[]');
         let myBookingIDs = JSON.parse(localStorage.getItem('vogue_my_bookings') || '[]');
         let currentIdx = 0;
@@ -182,16 +175,30 @@ const analytics = getAnalytics(app);
         let selectedDateFilter = null;
         let currentAuthUser = "";
 
-        window.onload = () => { if(document.getElementById('appDate')) document.getElementById('appDate').valueAsDate = new Date(); renderGallery(); initCalendar(); };
+        // 初始化
+        window.onload = () => { 
+            if(document.getElementById('appDate')) document.getElementById('appDate').valueAsDate = new Date(); 
+            renderGallery(); 
+            initCalendar(); 
+        };
 
-        // 判斷當前設計師是否有權限看到該筆訂單 (含不指定)
+        // 監聽 Firebase 資料庫變化
+        onValue(bookingRef, (snap) => {
+            allBookings = snap.val() || {};
+            updateCalendarHighlights();
+            renderLists();
+            renderPhotoWall();
+        });
+
+        // 權限檢查
         function checkPermission(itemDesigner) {
             if(currentAuthUser === "Admin") return true;
             if(itemDesigner === currentAuthUser) return true;
-            if(itemDesigner === "不指定") return true; // 所有設計師都能看到不指定的單
+            if(itemDesigner === "不指定") return true;
             return false;
         }
 
+        // 月曆標記
         function updateCalendarHighlights() {
             const cells = document.querySelectorAll('.calendar-table td[data-date]');
             const datesWithBookings = new Set(Object.values(allBookings)
@@ -204,13 +211,7 @@ const analytics = getAnalytics(app);
             });
         }
 
-        onValue(bookingRef, (snap) => {
-            allBookings = snap.val() || {};
-            updateCalendarHighlights();
-            renderLists();
-            renderPhotoWall();
-        });
-
+        // 渲染清單
         function renderLists() {
             const clientDiv = document.getElementById('my-list');
             const designDiv = document.getElementById('designer-content');
@@ -258,6 +259,7 @@ const analytics = getAnalytics(app);
             });
         }
 
+        // 預約功能
         window.addBooking = () => {
             const designer = document.getElementById('selDesigner').value;
             const name = document.getElementById('custName').value;
@@ -279,22 +281,18 @@ const analytics = getAnalytics(app);
                 alert("預約已送出！我們會盡快為您安排。"); 
                 document.getElementById('custName').value = '';
                 document.querySelectorAll('.service-item').forEach(e => e.classList.remove('selected'));
+            }).catch(err => {
+                alert("發送失敗，請確認資料庫權限已開啟！");
+                console.error(err);
             });
         };
 
-        // 基本 UI 切換與功能
+        // 頁籤切換
         window.switchTab = (t) => {
             if(t === 'designer') {
                 const code = prompt("請輸入管理碼");
                 if(code === '1111') currentAuthUser = "設計師 A";
                 else if(code === '2222') currentAuthUser = "設計師 B";
-                else if(code === '3333') currentAuthUser = "設計師 C";
-                else if(code === '4444') currentAuthUser = "設計師 D";
-                else if(code === '5555') currentAuthUser = "設計師 E";
-                else if(code === '6666') currentAuthUser = "設計師 F";
-                else if(code === '7777') currentAuthUser = "設計師 G";
-                else if(code === '8888') currentAuthUser = "設計師 H";
-                else if(code === '9999') currentAuthUser = "設計師 I";
                 else if(code === '0000') currentAuthUser = "Admin";
                 else { alert("碼錯囉！"); return; }
                 document.getElementById('designer-title').innerText = currentAuthUser + " 後台";
@@ -362,5 +360,3 @@ const analytics = getAnalytics(app);
     </script>
 </body>
 </html>
-
-
