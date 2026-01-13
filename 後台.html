@@ -5,41 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VOGUE 管理後台</title>
     <style>
-        :root { --dark-bg: #0a0a0a; --gold-dim: rgba(212, 175, 55, 0.15); --gold-bright: #d4af37; --gold-glow: rgba(212, 175, 55, 0.5); }
-        body { background-color: var(--dark-bg); color: #fff; font-family: 'PingFang TC', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 0 100px; }
+        :root {
+            --dark-bg: #0a0a0a;
+            --gold-dim: rgba(212, 175, 55, 0.15);
+            --gold-bright: #d4af37;
+            --gold-glow: rgba(212, 175, 55, 0.5);
+            --status-wait: #ff4d4d;
+            --status-done: #00ff00;
+        }
+
+        body {
+            background-color: var(--dark-bg); color: #fff;
+            font-family: 'PingFang TC', sans-serif; margin: 0;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; padding: 20px 0 100px;
+        }
+
         .panel { width: 92%; max-width: 420px; }
+
         .glass-card { background: linear-gradient(145deg, #111, #000); border: 1px solid var(--gold-dim); border-radius: 24px; padding: 22px; margin-bottom: 20px; width: 100%; box-sizing: border-box; }
-        .calendar-table { width: 100%; border-collapse: collapse; text-align: center; }
+        
+        .calendar-table { width: 100%; border-collapse: collapse; color: #ccc; }
         .calendar-table th { color: var(--gold-bright); padding: 10px 0; font-size: 12px; }
-        .calendar-table td { height: 45px; cursor: pointer; border-radius: 8px; position: relative; }
-        .calendar-table td.selected-day { background: var(--gold-bright); color: #000; font-weight: bold; }
+        .calendar-table td { height: 45px; text-align: center; cursor: pointer; border-radius: 8px; position: relative; font-size: 14px; }
+        .calendar-table td:hover { background: var(--gold-dim); }
+        .calendar-table td.selected-day { background: var(--gold-bright) !important; color: #000; font-weight: bold; }
         .calendar-table td.has-event::after { content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--gold-bright); border-radius: 50%; }
+
         .history-item { background: rgba(255,255,255,0.04); padding: 15px; border-radius: 18px; margin-bottom: 12px; border-left: 4px solid var(--gold-bright); }
+        
         .drawer { margin-top: 15px; border: 1px solid #333; border-radius: 15px; overflow: hidden; width: 100%; }
-        .drawer-header { background: #1a1a1a; padding: 15px; display: flex; justify-content: space-between; cursor: pointer; }
-        .drawer-content { display: none; background: #000; padding: 10px; max-height: 300px; overflow-y: auto; }
+        .drawer-header { background: #1a1a1a; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .drawer-content { display: none; background: #000; padding: 10px; max-height: 350px; overflow-y: auto; }
         .drawer.open .drawer-content { display: block; }
-        .archive-item { padding: 10px; border-bottom: 1px solid #222; font-size: 13px; }
+        .archive-item { font-size: 12px; padding: 12px; border-bottom: 1px solid #222; }
+        
+        .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; border: 1px solid currentColor; margin-left: 5px; }
+        .status-wait { color: var(--status-wait); }
     </style>
 </head>
 <body>
+
     <div class="panel">
-        <h1 style="text-align:center; color:var(--gold-bright);">管理後台</h1>
+        <h1 style="text-align:center; color:var(--gold-bright); margin-bottom: 20px;">管理後台</h1>
+        
         <div class="glass-card">
-            <h4 id="calendar-month" style="text-align:center; color:var(--gold-bright);"></h4>
+            <h4 id="calendar-month" style="text-align:center; color:var(--gold-bright); margin-top:0;"></h4>
             <table class="calendar-table">
                 <thead><tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr></thead>
                 <tbody id="calendar-body"></tbody>
             </table>
         </div>
-        <h3 id="selected-date-title" style="color:#ff4d4d;">⚠️ 待處理預約單</h3>
+        
+        <h3 id="selected-date-title" style="color:#ff4d4d; margin-left:10px;">⚠️ 待處理預約單 (請接單)</h3>
         <div id="designer-content"></div>
+
+        <hr style="border:0; border-top:1px solid #333; margin:25px 0;">
+
         <div class="drawer" onclick="this.classList.toggle('open')">
-            <div class="drawer-header"><span style="color:var(--gold-bright);">🔮 未來行程表</span><span id="future-count">0</span></div>
+            <div class="drawer-header">
+                <span style="color:var(--gold-bright); font-weight:bold;">🔮 未來行程表 (已確認)</span>
+                <span id="future-count" style="background:var(--gold-bright); color:#000; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
+            </div>
             <div class="drawer-content" id="future-list-drawer"></div>
         </div>
+
         <div class="drawer" onclick="this.classList.toggle('open')">
-            <div class="drawer-header"><span style="color:#888;">📁 歷史結案歸檔</span><span>展開 ▾</span></div>
+            <div class="drawer-header">
+                <span style="color:#888;">📁 歷史結案歸檔 (已完成)</span>
+                <span style="font-size:12px; color:#666;">展開 ▾</span>
+            </div>
             <div class="drawer-content" id="history-archive-drawer"></div>
         </div>
     </div>
@@ -47,7 +82,17 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        const firebaseConfig = { apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU", authDomain: "holyhairsalon-f73bf.firebaseapp.com", databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com", projectId: "holyhairsalon-f73bf", storageBucket: "holyhairsalon-f73bf.firebasestorage.app", messagingSenderId: "960169055224", appId: "1:960169055224:web:2dd9017ef2e96803bf3c0d" };
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
+            authDomain: "holyhairsalon-f73bf.firebaseapp.com",
+            databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
+            projectId: "holyhairsalon-f73bf",
+            storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
+            messagingSenderId: "960169055224",
+            appId: "1:960169055224:web:2dd9017ef2e96803bf3c0d"
+        };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const bookingRef = ref(db, 'vogue_bookings');
@@ -57,7 +102,7 @@
 
         function renderCalendar() {
             const now = new Date(); const year = now.getFullYear(); const month = now.getMonth();
-            document.getElementById('calendar-month').innerText = `${year}年 ${month+1}月`;
+            document.getElementById('calendar-month').innerText = `${year}年 ${month + 1}月`;
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const tbody = document.getElementById('calendar-body'); tbody.innerHTML = "";
@@ -69,7 +114,7 @@
                     if (i === 0 && j < firstDay) { cell.innerHTML = ""; }
                     else if (dateNum > daysInMonth) { break; }
                     else {
-                        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(dateNum).padStart(2,'0')}`;
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
                         cell.innerText = dateNum;
                         if (Object.values(allBookings).some(b => b.date === dateStr && b.status === "待接單")) cell.classList.add('has-event');
                         if (dateStr === selectedDate) cell.classList.add('selected-day');
@@ -83,26 +128,36 @@
         }
 
         function renderAdminDrawers() {
-            const fD = document.getElementById('future-list-drawer'); const aD = document.getElementById('history-archive-drawer');
-            fD.innerHTML = ""; aD.innerHTML = ""; let fCount = 0;
-            const today = new Date().toLocaleDateString('en-CA');
-            Object.keys(allBookings).sort((a,b) => allBookings[b].date.localeCompare(allBookings[a].date)).forEach(key => {
+            const futureDrawer = document.getElementById('future-list-drawer');
+            const archiveDrawer = document.getElementById('history-archive-drawer');
+            futureDrawer.innerHTML = ""; archiveDrawer.innerHTML = "";
+            let futureCount = 0;
+            const todayStr = new Date().toLocaleDateString('en-CA'); 
+            const keys = Object.keys(allBookings).sort((a,b) => (allBookings[b].date || "").localeCompare(allBookings[a].date || ""));
+            keys.forEach(key => {
                 const b = allBookings[key];
                 if (b.status === "已接單" && b.date) {
-                    const html = `<div class="archive-item"><b>${b.date}</b> | ${b.name}<br><small>${b.services ? b.services.join(',') : ''}</small></div>`;
-                    if (b.date >= today) { fCount++; fD.innerHTML += html; } else { aD.innerHTML += html; }
+                    const html = `<div class="archive-item"><span style="color:#00ff00">●</span> <b>${b.date}</b> | ${b.name} (${b.phone})<br><small style="color:#888;">項目：${b.services ? b.services.join(',') : ''}</small></div>`;
+                    if (b.date >= todayStr) { futureCount++; futureDrawer.innerHTML += html; } else { archiveDrawer.innerHTML += html; }
                 }
             });
-            document.getElementById('future-count').innerText = fCount;
+            document.getElementById('future-count').innerText = futureCount;
         }
 
         function updateDesignerList() {
-            const list = document.getElementById('designer-content'); list.innerHTML = "";
-            const filtered = Object.keys(allBookings).filter(k => allBookings[k].date === selectedDate && allBookings[k].status === "待接單");
-            if(!filtered.length) { list.innerHTML = "<p style='text-align:center;color:#666;'>無待處理預約</p>"; return; }
-            filtered.forEach(k => {
-                const b = allBookings[k];
-                list.innerHTML += `<div class="history-item"><b>${b.name}</b> (${b.time})<br><small>${b.services ? b.services.join(',') : ''}</small><br><button onclick="accept('${k}')" style="margin-top:10px;width:100%;background:var(--gold-bright);border:none;padding:8px;border-radius:8px;font-weight:bold;">確認接單</button></div>`;
+            const designerList = document.getElementById('designer-content'); designerList.innerHTML = "";
+            const filtered = Object.keys(allBookings).filter(key => allBookings[key].date === selectedDate && allBookings[key].status === "待接單");
+            if(filtered.length === 0) { designerList.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px;">此日期無待處理預約</p>`; return; }
+            filtered.forEach(key => {
+                const b = allBookings[key];
+                designerList.innerHTML += `<div class="history-item">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><b>${b.name}</b> <span class="status-badge status-wait">待接單</span></span>
+                        <small>${b.time}</small>
+                    </div>
+                    <div style="font-size:12px; color:#999; margin-top:5px;">電話：<a href="tel:${b.phone}" style="color:var(--gold-bright);">${b.phone}</a><br>項目：${b.services ? b.services.join(',') : ''}</div>
+                    <button onclick="accept('${key}')" style="margin-top:10px; width:100%; background:var(--gold-bright); border:none; padding:8px; border-radius:8px; font-weight:bold; color:#000;">確認預約 (移至未來行程)</button>
+                </div>`;
             });
         }
 
